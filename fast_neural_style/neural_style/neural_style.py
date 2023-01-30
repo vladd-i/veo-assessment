@@ -43,6 +43,7 @@ def train(args):
     transform = transforms.Compose([
         transforms.Resize(args.image_size),
         transforms.CenterCrop(args.image_size),
+        transforms.RandomRotation(degrees=args.degrees, fill=args.fill),
         transforms.ToTensor(),
         transforms.Lambda(lambda x: x.mul(255))
     ])
@@ -208,6 +209,11 @@ def main():
                                   help="path to folder where checkpoints of trained models will be saved")
     train_arg_parser.add_argument("--image-size", type=int, default=256,
                                   help="size of training images, default is 256 X 256")
+    train_arg_parser.add_argument("--degrees", type=int, default=0,
+                                  help="value for maximum degree to rotate images by in preprocessing; "
+                                       "the range of rotation is (-degrees, +degrees), default is 0 (no rotation)")
+    train_arg_parser.add_argument("--fill", type=int, default=0,
+                                  help="pixel fill value for the area outside the rotated image, default is 0 (black)")
     train_arg_parser.add_argument("--style-size", type=int, default=None,
                                   help="size of style-image, default is the original size of style image")
     train_arg_parser.add_argument("--cuda", type=int, required=True,
