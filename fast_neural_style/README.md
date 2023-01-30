@@ -43,6 +43,11 @@ There are several command line arguments, the important ones are listed below
 - `--cuda`: set it to 1 for running on GPU, 0 for CPU.
 - `--mps`: set it to 1 for running on macOS GPU
 
+Several optional training arguments were added:
+- `--n-subset`: number of images to subset from the dataset for training, default is 100.
+- `--degrees`: value for maximum degree to randomly rotate images by in preprocessing, default is 0 (no rotation).
+- `--fill`: pixel fill value for the area outside the rotated image, default is 0 (black).
+
 Refer to `neural_style/neural_style.py` for other command line arguments. For training new models you might have to tune the values of `--content-weight` and `--style-weight`. The mosaic style model shown above was trained with `--content-weight 1e5` and `--style-weight 1e10`. The remaining 3 models were also trained with similar order of weight parameters with slight variation in the `--style-weight` (`5e10` or `1e11`).
 
 ## Models

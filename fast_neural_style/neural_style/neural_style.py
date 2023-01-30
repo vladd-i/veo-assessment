@@ -7,7 +7,7 @@ import re
 import numpy as np
 import torch
 from torch.optim import Adam
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torchvision import datasets
 from torchvision import transforms
 import torch.onnx
@@ -31,10 +31,11 @@ def check_paths(args):
 def train(args):
     if args.cuda:
         device = torch.device("cuda")
-    elif args.mps:
-        device = torch.device("mps")
+    # elif args.mps:
+    #     device = torch.device("mps")
     else:
         device = torch.device("cpu")
+    
 
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -42,11 +43,14 @@ def train(args):
     transform = transforms.Compose([
         transforms.Resize(args.image_size),
         transforms.CenterCrop(args.image_size),
+        transforms.RandomRotation(degrees=args.degrees, fill=args.fill),
         transforms.ToTensor(),
         transforms.Lambda(lambda x: x.mul(255))
     ])
     train_dataset = datasets.ImageFolder(args.dataset, transform)
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size)
+    train_dataset_subset = Subset(train_dataset, np.random.choice(len(train_dataset), args.n_subset, replace=False))
+
+    train_loader = DataLoader(train_dataset_subset, batch_size=args.batch_size)
 
     transformer = TransformerNet().to(device)
     optimizer = Adam(transformer.parameters(), args.lr)
@@ -195,6 +199,8 @@ def main():
     train_arg_parser.add_argument("--dataset", type=str, required=True,
                                   help="path to training dataset, the path should point to a folder "
                                        "containing another folder with all the training images")
+    train_arg_parser.add_argument("--n-subset", type=int, default=100,
+                                  help="number of images to randomly sample from the training dataset, default is 100")
     train_arg_parser.add_argument("--style-image", type=str, default="images/style-images/mosaic.jpg",
                                   help="path to style-image")
     train_arg_parser.add_argument("--save-model-dir", type=str, required=True,
@@ -203,6 +209,11 @@ def main():
                                   help="path to folder where checkpoints of trained models will be saved")
     train_arg_parser.add_argument("--image-size", type=int, default=256,
                                   help="size of training images, default is 256 X 256")
+    train_arg_parser.add_argument("--degrees", type=int, default=0,
+                                  help="value for maximum degree to rotate images by in preprocessing; "
+                                       "the range of rotation is (-degrees, +degrees), default is 0 (no rotation)")
+    train_arg_parser.add_argument("--fill", type=int, default=0,
+                                  help="pixel fill value for the area outside the rotated image, default is 0 (black)")
     train_arg_parser.add_argument("--style-size", type=int, default=None,
                                   help="size of style-image, default is the original size of style image")
     train_arg_parser.add_argument("--cuda", type=int, required=True,
@@ -243,8 +254,8 @@ def main():
     if args.cuda and not torch.cuda.is_available():
         print("ERROR: cuda is not available, try running on CPU")
         sys.exit(1)
-    if not args.mps and torch.backends.mps.is_available():
-        print("WARNING: mps is available, run with --mps to enable macOS GPU")
+    # if not args.mps and torch.backends.mps.is_available():
+    #     print("WARNING: mps is available, run with --mps to enable macOS GPU")
 
     if args.subcommand == "train":
         check_paths(args)
